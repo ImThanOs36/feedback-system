@@ -1,15 +1,14 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import { Toaster } from "@/components/ui/toaster"
 
-
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Issue Feedback System',
   description: 'System for submitting and managing issue feedback',
 }
-
-
 
 export default function RootLayout({
   children,
@@ -18,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body >
+      <body className={`${inter.className} bg-background text-foreground`}>
         {children}
         <Toaster />
       </body>
