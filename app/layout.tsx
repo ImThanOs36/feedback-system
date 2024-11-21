@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: 'System for submitting and managing issue feedback',
 }
 
+
+
 export default function RootLayout({
   children,
 }: {
