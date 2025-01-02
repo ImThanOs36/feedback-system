@@ -1,21 +1,49 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-export async function GET() {
-  const client = new PrismaClient();
+// Reuse the Prisma Client instance to improve performance
+const client = new PrismaClient();
 
+export async function GET(request: { method: string }) {
   try {
+    // Handle OPTIONS preflight requests
+    if (request.method === "OPTIONS") {
+      const response = new NextResponse(null, { status: 200 });
+      response.headers.set(
+        "Access-Control-Allow-Origin",
+        "http://localhost:3000"
+      );
+      response.headers.set(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS"
+      );
+      response.headers.set(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization"
+      );
+      response.headers.set("Access-Control-Allow-Credentials", "true");
+      return response;
+    }
+
+    // Fetch issues from the database
     const issues = await client.issue.findMany();
 
-    // Add headers to the NextResponse
-    const response = NextResponse.json(
-      { issues },
-      { status: 200 }
-    );
+    // Create the response with the issues data
+    const response = NextResponse.json({ issues }, { status: 200 });
 
-    response.headers.set("Access-Control-Allow-Origin", "http://localhost:3000"); // Replace with your frontend URL
-    response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    // Set CORS headers
+    response.headers.set(
+      "Access-Control-Allow-Origin",
+      "http://localhost:3000"
+    ); // Replace with your frontend URL
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
     response.headers.set("Access-Control-Allow-Credentials", "true");
 
     return response;
