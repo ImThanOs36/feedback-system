@@ -87,7 +87,7 @@ export async function POST(req: Request) {
 
     const info = await transporter.sendMail({
       from: '"Shubham Lad" <lads42279@gmail.com>',
-      to: "ladshubham36@gmail.com",
+      to: "ladramjay1528@gmail.com",
       subject: "Issue Report",
       text: `Hello,
 
