@@ -50,6 +50,7 @@ export default function AdminDashboard() {
   async function getData() {
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/issues`);
+      console.log(process.env.NEXT_PUBLIC_BACKEND_URL)
       if (response) {
         setLoading(false);
       }
