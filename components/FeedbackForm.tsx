@@ -1,5 +1,4 @@
 'use client'
-
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,8 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/components/ui/use-toast"
-import { v4 as uuidv4 } from 'uuid'
+import axios from 'axios'
+import { Loader } from 'lucide-react'
 
 const departments = [
   "Human Resources",
@@ -34,6 +33,9 @@ export default function FeedbackForm() {
     additionalInfo: ''
   })
 
+  const [message, setMessage] = useState({ text: '', type: '' })
+  const [loading, setLoading] = useState(false)
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
@@ -44,24 +46,32 @@ export default function FeedbackForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const newIssue = {
-      ...formData,
-      id: uuidv4(),
-      date: new Date().toISOString(),
-      status: 'Open'
-    }
-    
-    // In a real application, you would send this data to your backend
-    // For now, we'll just store it in localStorage
-    const storedIssues = localStorage.getItem('issues')
-    const issues = storedIssues ? JSON.parse(storedIssues) : []
-    issues.push(newIssue)
-    localStorage.setItem('issues', JSON.stringify(issues))
+    setLoading(true)
 
-    toast({
-      title: "Feedback Submitted",
-      description: "Thank you for your feedback. We'll review it shortly.",
-    })
+    // Validate that required fields are not empty
+    if (Object.values(formData).some(field => field === '')) {
+      setMessage({
+        text: "Error: All required fields must be filled out.",
+        type: 'error'
+      })
+      return;
+    }
+
+    // Send the form data to the backend
+    axios.post(`${process.env.BACKEND_URL}/api/issues`, { formData }, { headers: { "Content-Type": "application/json" } })
+      .then(() => {
+        setLoading(false)
+        setMessage({
+          text: "Success: The issue has been received and the report has been sent to the concerned team via email.",
+          type: 'success'
+        })
+      })
+      .catch(() => {
+        setMessage({
+          text: "Error: Something went wrong. Please try again.",
+          type: 'error'
+        })
+      });
 
     // Reset form
     setFormData({
@@ -71,11 +81,21 @@ export default function FeedbackForm() {
       issueTitle: '',
       issueDescription: '',
       additionalInfo: ''
-    })
+    });
   }
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
+      {/* Message Box */}
+      {message.text && (
+        <div className={` p-4 rounded-md ${message.type === 'success' ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700'}`}>
+          {message.type === 'success' ? (
+            <span>✔️ {message.text}</span>
+          ) : (
+            <span>❌ {message.text}</span>
+          )}
+        </div>
+      )}
       <CardHeader>
         <CardTitle>Submit Your Feedback</CardTitle>
       </CardHeader>
@@ -118,9 +138,13 @@ export default function FeedbackForm() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit">Submit Feedback</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? <Loader /> : "Submit Feedback"}
+          </Button>
         </CardFooter>
       </form>
+
+
     </Card>
   )
 }

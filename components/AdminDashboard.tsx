@@ -1,35 +1,27 @@
 'use client';
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogDescription,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogTrigger,
-// } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Loader } from 'lucide-react';
 import { format } from "date-fns";
+import axios from 'axios';
 
 interface IssueFeedback {
-  id: string;
-  name: string;
-  email: string;
-  department: string;
-  issueTitle: string;
-  issueDescription: string;
-  additionalInfo: string;
-  date: string;
+  id: string | "";
+  name: string | "";
+  email: string | "";
+  department: string | "";
+  title: string | "";
+  description: string | "";
+  additionalInfo: string | "";
+  date: string | "";
+  rawDate?: Date; // For sorting purposes
   status: 'Open' | 'In Progress' | 'Resolved';
 }
 
@@ -53,16 +45,35 @@ export default function AdminDashboard() {
   const [filteredIssues, setFilteredIssues] = useState<IssueFeedback[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
 
-  // Load issues from localStorage on mount
-  useEffect(() => {
-    const storedIssues = localStorage.getItem('issues');
-    if (storedIssues) {
-      setIssueList(JSON.parse(storedIssues));
+  async function getData() {
+    try {
+      const response = await axios.get(`${process.env.BACKEND_URL}/api/issues`);
+      if (response) {
+        setLoading(false);
+      }
+      const issues = response.data.issues
+        .map((issue: { date: string | number | Date }) => {
+          const date = new Date(issue.date);
+          return {
+            ...issue,
+            date: `${("0" + date.getDate()).slice(-2)}/${("0" + (date.getMonth() + 1)).slice(-2)}/${date.getFullYear()}`,
+            rawDate: date, // Store raw Date for sorting
+          };
+        })
+        .sort((a: { rawDate: number; }, b: { rawDate: number; }) => b.rawDate - a.rawDate); // Sort by rawDate (newest first)
+
+      setIssueList(issues);
+    } catch (error) {
+      console.error(error);
     }
+  }
+
+  useEffect(() => {
+    getData();
   }, []);
 
-  // Memoized filter function
   const filterIssues = useCallback(() => {
     let filtered = issueList;
 
@@ -72,7 +83,7 @@ export default function AdminDashboard() {
 
     if (selectedDate) {
       filtered = filtered.filter(issue => {
-        const issueDate = new Date(issue.date);
+        const issueDate = new Date(issue.rawDate || issue.date);
         return issueDate.toDateString() === selectedDate.toDateString();
       });
     }
@@ -80,25 +91,17 @@ export default function AdminDashboard() {
     setFilteredIssues(filtered);
   }, [issueList, selectedDepartment, selectedDate]);
 
-  // Apply filtering whenever relevant state changes
   useEffect(() => {
     filterIssues();
   }, [filterIssues]);
 
-  // Update issue status
   const updateStatus = (id: string, newStatus: 'Open' | 'In Progress' | 'Resolved') => {
     const updatedList = issueList.map(item =>
       item.id === id ? { ...item, status: newStatus } : item
     );
 
     setIssueList(updatedList);
-    localStorage.setItem('issues', JSON.stringify(updatedList));
-    filterIssues(); // Reapply filters
-
-    toast({
-      title: "Status Updated",
-      description: `Issue status updated to ${newStatus}`,
-    });
+    filterIssues();
   };
 
   return (
@@ -109,7 +112,6 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            {/* Filter by Department */}
             <div>
               <Label htmlFor="department-select" className="mb-2 block text-sm font-medium">
                 Filter by Department
@@ -126,7 +128,6 @@ export default function AdminDashboard() {
               </Select>
             </div>
 
-            {/* Filter by Date */}
             <div>
               <Label htmlFor="date-select" className="mb-2 block text-sm font-medium">
                 Filter by Date
@@ -153,13 +154,13 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Issue List Table */}
           <div className="overflow-x-auto sm:overflow-x-visible">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Issue Information</TableHead>
                   <TableHead className="hidden sm:table-cell">Department</TableHead>
+                  <TableHead className="hidden sm:table-cell">Date</TableHead>
                   <TableHead className="hidden sm:table-cell">Status & Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -168,16 +169,17 @@ export default function AdminDashboard() {
                   <TableRow key={issue.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{issue.issueTitle}</div>
-                        <div className="text-sm text-muted-foreground">{issue.name}</div>
-                        <div className="text-sm text-muted-foreground">{issue.department}</div>
+                        <div className="text-md text-muted-foreground "><b>Title of Issue: </b>{issue.title}</div>
+                        <div className="text-sm text-muted-foreground"><b>Name: </b> {issue.name}</div>
+                        <div className="text-sm text-muted-foreground"><b>Email: </b>{issue.email}</div>
                       </div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">{issue.department}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{issue.date}</TableCell>
                     <TableCell>
                       <Badge variant={
                         issue.status === 'Resolved' ? 'default' :
-                        issue.status === 'In Progress' ? 'secondary' : 'outline'
+                          issue.status === 'In Progress' ? 'secondary' : 'outline'
                       }>
                         {issue.status}
                       </Badge>
@@ -204,6 +206,9 @@ export default function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
+      <div className='flex w-full items-start justify-center p-10' >
+        {loading ? <Loader /> : null}
+      </div>
     </div>
   );
 }
