@@ -49,7 +49,7 @@ export default function AdminDashboard() {
 
   async function getData() {
     try {
-      const response = await axios.get(`${process.env.BACKEND_URL}/api/issues`);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/issues`);
       if (response) {
         setLoading(false);
       }
