@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 // Reuse the Prisma Client instance to improve performance
 const client = new PrismaClient();
 
-export async function GET(request: { method: string }) {
+export async function GET(req: NextRequest) {
   try {
     // Handle OPTIONS preflight requests
-    if (request.method === "OPTIONS") {
+    if (req.method === "OPTIONS") {
       const response = new NextResponse(null, { status: 200 });
       response.headers.set(
         "Access-Control-Allow-Origin",
