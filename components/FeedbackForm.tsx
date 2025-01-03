@@ -58,7 +58,7 @@ export default function FeedbackForm() {
     }
 
     // Send the form data to the backend
-    axios.post(`${process.env.BACKEND_URL}/api/submit`, { formData }, { headers: { "Content-Type": "application/json" } })
+    axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/issues`, { formData }, { headers: { "Content-Type": "application/json" } })
       .then(() => {
         setLoading(false)
         setMessage({
